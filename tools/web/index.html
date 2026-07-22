@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>esp-otp console</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>esp-otp console</h1>
+  <div class="conn">
+    <label><input type="radio" name="transport" value="ble" checked> Device (Web Bluetooth)</label>
+    <label><input type="radio" name="transport" value="serial"> Device (Web Serial)</label>
+    <button id="connect">Connect</button>
+    <span id="status" class="badge off">disconnected</span>
+  </div>
+</header>
+
+<main>
+  <section id="device" class="card">
+    <h2>Device</h2>
+    <dl id="info">
+      <dt>name</dt><dd id="devname">—</dd>
+      <dt>firmware</dt><dd id="fw">—</dd>
+      <dt>RTC present</dt><dd id="rtc">—</dd>
+      <dt>time valid</dt><dd id="timevalid">—</dd>
+      <dt>secrets</dt><dd id="count">—</dd>
+    </dl>
+    <div class="row">
+      <button id="ping" disabled>Ping</button>
+      <button id="refresh" disabled>Refresh</button>
+      <button id="settime" disabled>Set time = now</button>
+      <button id="setname" disabled>Rename device</button>
+    </div>
+  </section>
+
+  <section id="display" class="card">
+    <h2>Display</h2>
+    <canvas id="screen" width="72" height="40" aria-label="live device screen"></canvas>
+    <div class="row">
+      <button id="btn-single" disabled>Single</button>
+      <button id="btn-double" disabled>Double</button>
+      <button id="btn-long" disabled>Long</button>
+      <button id="btn-reboot" class="danger" disabled>Reset</button>
+    </div>
+    <p class="muted">live mirror (1&nbsp;Hz) · single=cycle · double=HID target · long=pair/type</p>
+  </section>
+
+  <section id="secrets" class="card">
+    <h2>Secrets</h2>
+    <table id="list">
+      <thead><tr><th>id</th><th>label</th><th>type</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p id="list-empty" class="muted">not connected</p>
+  </section>
+
+  <section id="addsec" class="card">
+    <h2>Add secret</h2>
+    <form id="add">
+      <label>otpauth:// URL
+        <input name="url" placeholder="otpauth://totp/Issuer:acct?secret=…" spellcheck="false">
+      </label>
+      <div class="row"><button type="button" id="parse-url">Fill from URL</button></div>
+      <hr>
+      <label>Label <input name="label" maxlength="31" required></label>
+      <label>Secret (base32) <input name="secret" required spellcheck="false"></label>
+      <div class="row">
+        <label>Digits <input name="digits" type="number" value="6" min="6" max="10"></label>
+        <label>Period <input name="period" type="number" value="30" min="1" max="3600"></label>
+        <label>Algo
+          <select name="algo"><option value="0">SHA1</option><option value="1">SHA256</option><option value="2">SHA512</option></select>
+        </label>
+      </div>
+      <button type="submit" disabled>Add</button>
+    </form>
+  </section>
+</main>
+
+<section class="card">
+  <h2>Log</h2>
+  <pre id="log"></pre>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>

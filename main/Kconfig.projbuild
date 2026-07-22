@@ -1,0 +1,29 @@
+menu "esp-otp hardware"
+
+    config OTP_I2C_SDA_GPIO
+        int "I2C SDA GPIO (OLED + optional DS3231)"
+        default 5
+        help
+            Shared I2C data line. Avoid strapping pins (2, 8, 9).
+
+    config OTP_I2C_SCL_GPIO
+        int "I2C SCL GPIO (OLED + optional DS3231)"
+        default 6
+
+    config OTP_BUTTON_GPIO
+        int "Push button GPIO (active low)"
+        default 9
+        help
+            The C3 super mini's onboard BOOT button is on GPIO9 (active low,
+            has a pull-up). Reused here as the user button. Don't hold it at
+            power-on or the ROM enters USB download mode.
+
+    config OTP_DEMO_MODE
+        bool "Demo mode (seed a test secret + time at boot)"
+        default n
+        help
+            For QEMU/bring-up: if the store is empty, seed a demo TOTP secret,
+            and if time is unset, set a fixed epoch so a code is computed
+            immediately without a host. Leave OFF for production.
+
+endmenu

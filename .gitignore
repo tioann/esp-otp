@@ -1,0 +1,11 @@
+build/
+build.sim/
+managed_components/
+sdkconfig
+sdkconfig.old
+dependencies.lock
+*.pyc
+__pycache__/
+.venv/
+venv/
+.claude/

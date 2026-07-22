@@ -1,0 +1,24 @@
+# esp-otp BLE clock-sync daemon.
+#
+#   docker compose -f tools/clock-sync/docker-compose.yml up -d --build
+#
+# bleak talks to the host's bluetoothd over the system D-Bus; the adapter itself
+# stays managed by the host. That needs the D-Bus socket and host networking.
+services:
+  clock-sync:
+    build:
+      context: ..                       # tools/  (has host_cli.py + the daemon)
+      dockerfile: clock-sync/Dockerfile
+    image: esp-otp-clock-sync
+    container_name: esp-otp-clock-sync
+    restart: unless-stopped
+    network_mode: host                  # D-Bus / BlueZ live on the host net ns
+    environment:
+      # Syncs every esp-otp in range by default; uncomment to pin to one device.
+      # ESP_OTP_ADDRESS: "AA:BB:CC:DD:EE:FF"
+      ESP_OTP_INTERVAL: "600"           # refresh every 10 min
+    volumes:
+      # System D-Bus socket so bleak can reach bluetoothd on the host.
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+    cap_add:
+      - NET_ADMIN

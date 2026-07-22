@@ -1,0 +1,11 @@
+menu "esp-otp secret store"
+
+    config OTP_STORE_CAPACITY
+        int "Maximum number of stored TOTP secrets"
+        default 32
+        range 1 128
+        help
+            Records are held in RAM and mirrored to NVS. Each record is
+            roughly 110 bytes, so 32 secrets cost ~3.5 KB.
+
+endmenu

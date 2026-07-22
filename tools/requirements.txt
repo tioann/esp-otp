@@ -1,0 +1,6 @@
+# Python deps for the host tools.
+# Install into the venv:  tools/.venv/bin/pip install -r tools/requirements.txt
+pyserial>=3.5   # host_cli.py — USB/serial management CLI
+bleak>=0.22     # BLE management client (e.g. GET_SCREEN over the GATT service)
+textual>=1.0    # tui.py — terminal console (BLE/serial, live OLED, buttons)
+platformdirs>=4.0  # host_cli.py/tui.py — per-OS location for the shared config file

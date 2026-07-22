@@ -1,0 +1,37 @@
+menu "esp-otp status LED"
+
+    config OTP_LED_ENABLE
+        bool "Enable status LED"
+        default y
+        help
+            Drive an indicator LED that reflects the clock-sync state: steady
+            when synced within the last day, breathing when there is no time
+            and no RTC, off otherwise.
+
+    config OTP_LED_GPIO
+        int "Status LED GPIO"
+        depends on OTP_LED_ENABLE
+        default 8
+        help
+            The C3 super mini's onboard blue LED is on GPIO8. GPIO8 is a
+            strapping pin, but that only matters at power-on; driving it after
+            boot is fine.
+
+    config OTP_LED_ACTIVE_LOW
+        bool "LED is active low"
+        depends on OTP_LED_ENABLE
+        default y
+        help
+            The C3 super mini's onboard LED lights when the pin is driven LOW.
+            Enable for that board; disable for an LED wired active-high.
+
+    config OTP_LED_INTENSITY
+        int "Steady brightness percent (0-100)"
+        depends on OTP_LED_ENABLE
+        range 0 100
+        default 30
+        help
+            Brightness of the steady "synced recently" state, and the peak of
+            the breathing pulse.
+
+endmenu

@@ -1,0 +1,28 @@
+# Convenience wrapper for building/flashing esp-otp inside the pinned
+# ESP-IDF container.
+#
+#   docker compose run --rm build              # build the firmware
+#   docker compose run --rm build idf.py menuconfig
+#   docker compose run --rm flash              # build + flash (device passthrough)
+#
+# Flashing needs the USB device exposed to the container; adjust the
+# device path to match your board (commonly /dev/ttyACM0 for the C3's
+# native USB-Serial-JTAG).
+services:
+  build:
+    build: .
+    image: esp-otp-builder
+    volumes:
+      - ./:/project
+    working_dir: /project
+    command: ["idf.py", "build"]
+
+  flash:
+    build: .
+    image: esp-otp-builder
+    volumes:
+      - ./:/project
+    working_dir: /project
+    devices:
+      - "/dev/ttyACM0:/dev/ttyACM0"
+    command: ["idf.py", "-p", "/dev/ttyACM0", "flash", "monitor"]

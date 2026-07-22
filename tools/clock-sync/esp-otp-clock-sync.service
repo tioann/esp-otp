@@ -1,0 +1,31 @@
+# esp-otp BLE clock-sync as a systemd service (local install, no Docker).
+#
+# Install:
+#   sudo apt install python3-venv                 # if needed
+#   python3 -m venv /opt/esp-otp-clock-sync/venv
+#   /opt/esp-otp-clock-sync/venv/bin/pip install bleak
+#   sudo cp tools/host_cli.py tools/ble_clock_sync.py /opt/esp-otp-clock-sync/
+#   sudo cp tools/clock-sync/esp-otp-clock-sync.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now esp-otp-clock-sync
+#
+# Adjust User=/paths below to taste. The service user must be allowed to talk to
+# BlueZ over D-Bus (the "bluetooth" group / a Polkit rule usually covers this).
+[Unit]
+Description=esp-otp BLE clock-sync daemon
+After=bluetooth.target network.target
+Wants=bluetooth.target
+
+[Service]
+Type=simple
+# User=esp-otp
+WorkingDirectory=/opt/esp-otp-clock-sync
+ExecStart=/opt/esp-otp-clock-sync/venv/bin/python /opt/esp-otp-clock-sync/ble_clock_sync.py
+Environment=ESP_OTP_INTERVAL=600
+# Syncs every esp-otp in range by default; uncomment to pin to one device.
+# Environment=ESP_OTP_ADDRESS=AA:BB:CC:DD:EE:FF
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

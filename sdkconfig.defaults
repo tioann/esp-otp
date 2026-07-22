@@ -1,0 +1,28 @@
+# Baseline configuration for esp-otp. Committed so every build (and the
+# Docker image) starts from the same defaults; the generated sdkconfig is
+# gitignored.
+
+CONFIG_IDF_TARGET="esp32c3"
+
+# Route the console to the C3's native USB-Serial-JTAG so a plain USB
+# cable gives us logs (and, later, the management protocol channel).
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Custom partition layout (see partitions.csv).
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# Default 4 MB flash on the super-mini.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# BLE via NimBLE: management GATT service + HID keyboard (see components/blecon).
+# Peripheral role, plus the central/GATT-client role so we can read a connected
+# host's GAP Device Name (0x2A00) and show a friendly label instead of a bare
+# address. Bonds persisted in NVS so a paired host reconnects without re-pairing.
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=y
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=n
+CONFIG_BT_NIMBLE_NVS_PERSIST=y
