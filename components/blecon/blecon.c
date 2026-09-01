@@ -9,6 +9,7 @@
 
 #include "ble_internal.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_random.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -693,16 +694,49 @@ static void restart_advertising(void)
 
 // --- Host bring-up ----------------------------------------------------------
 
+// Advertise with a FIXED static-random identity address. It is derived
+// deterministically from the chip's factory BT MAC (so it is unique per device)
+// with the two most-significant bits forced to 0b11 — the bit pattern that marks
+// an address as "static random" per the BLE spec. Because it comes straight from
+// efuse it is identical on every boot with no NVS involved, so it NEVER changes:
+// not across reboots, not when the pairing window (re)starts advertising, and it
+// never rotates. A stable identity means one MAC per device in scan lists and a
+// clean bond/reconnect for background auto-sync.
+//
+// We deliberately do NOT use privacy / resolvable-private addresses (RPA): those
+// rotate (BLE default ~15 min, and again on every advertising restart), so the
+// same physical device shows up under several MACs at once in the app's scan
+// list and the address flips on each pairing attempt — confusing and pointless
+// for a device we WANT to be re-findable.
+static int static_addr_ensure(void)
+{
+    uint8_t mac[6];
+    esp_err_t err = esp_read_mac(mac, ESP_MAC_BT);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "read_mac failed (%s)", esp_err_to_name(err));
+        return -1;
+    }
+    // ble_addr_t.val is little-endian (val[5] = MSB); esp_read_mac is big-endian
+    // (mac[0] = MSB), so reverse the byte order.
+    uint8_t rnd[6];
+    for (int i = 0; i < 6; i++) {
+        rnd[i] = mac[5 - i];
+    }
+    rnd[5] |= 0xC0;  // force the two MSBs to 0b11 => valid static-random address
+    ESP_LOGI(TAG, "static-random identity %02X:%02X:%02X:%02X:%02X:%02X",
+             rnd[5], rnd[4], rnd[3], rnd[2], rnd[1], rnd[0]);
+    return ble_hs_id_set_rnd(rnd);
+}
+
 static void on_sync(void)
 {
-    if (ble_hs_util_ensure_addr(0) != 0) {
-        ESP_LOGE(TAG, "no BLE address available");
+    if (static_addr_ensure() != 0) {
+        ESP_LOGE(TAG, "no static identity address");
         return;
     }
-    if (ble_hs_id_infer_auto(0, &s_addr_type) != 0) {
-        ESP_LOGE(TAG, "address type inference failed");
-        return;
-    }
+    // Use the static-random address we just set (no address-type inference,
+    // which with privacy=1 would pick a rotating RPA instead).
+    s_addr_type = BLE_OWN_ADDR_RANDOM;
     start_advertising();
 }
 
@@ -752,11 +786,24 @@ esp_err_t blecon_init(void)
     // pairing flow (both sides try to display, so the codes never match).
     // sm_mitm still demands an authenticated association — no Just Works — and
     // bonds persist in NVS so a paired host reconnects without re-pairing.
+    // NOTE: sm_sc MUST stay 1. Legacy pairing (sm_sc=0) was tried and is WORSE —
+    // the Android pairing dialog appears then instantly vanishes (pairing aborts
+    // before the user can enter the passkey). See memory ble-legacy-pairing-dead-end.
     ble_hs_cfg.sm_io_cap = BLE_SM_IO_CAP_DISP_YES_NO;
     ble_hs_cfg.sm_bonding = 1;
     ble_hs_cfg.sm_mitm = 1;
     ble_hs_cfg.sm_sc = 1;
-    ble_hs_cfg.sm_our_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+    // Key distribution. We do NOT distribute our identity key (IRK): the device
+    // uses a FIXED address (see on_sync), so a peer never needs an IRK to resolve
+    // us. Sending ID_INFO also triggered a fatal race on Android — the peripheral
+    // transmitted ID_INFO while the phone was still SMP_STATE_ENCRYPTION_PENDING,
+    // the phone logged `Ignore ID_INFO in ENCRYPTION_PENDING` and dropped it, and
+    // the handshake then stalled to the ~30s SMP timeout (pairing only survived
+    // if the user happened to confirm on the phone before the ESP button). With
+    // ID dropped there is no ID_INFO, so pairing completes regardless of confirm
+    // order. We still REQUEST the peer's ID key so we can resolve a phone that
+    // advertises a resolvable-private address on reconnect.
+    ble_hs_cfg.sm_our_key_dist = BLE_SM_PAIR_KEY_DIST_ENC;
     ble_hs_cfg.sm_their_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
 
     ble_svc_gap_init();

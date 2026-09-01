@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "ble_internal.h"
+#include "blecon.h"
 #include "esp_log.h"
 #include "host/ble_gap.h"
 #include "host/ble_gatt.h"
@@ -113,6 +114,17 @@ static int mgmt_cmd_access(uint16_t conn_handle, uint16_t attr_handle,
     for (uint16_t i = 0; i < in_len; i++) {
         protocol_frame_t req;
         if (!protocol_parser_push(&mgmt_parser, in[i], &req)) {
+            continue;
+        }
+
+        // While the pairing window is open, refuse GET_SCREEN. The app's screen
+        // mirror polls it ~1 Hz, and each response is a multi-fragment notify
+        // burst of the framebuffer. Sent concurrently with the SMP handshake it
+        // saturates the ESP32-C3's tx path and the encryption-enable times out
+        // (BLE_HS_ETIMEOUT, status 13) — the exact failure seen with Android.
+        // BlueZ never hit it because it doesn't mirror the screen. Drop the poll
+        // silently (no response); the app retries once pairing settles.
+        if (req.type == OP_GET_SCREEN && blecon_pairing_open()) {
             continue;
         }
 

@@ -26,3 +26,22 @@ services:
     devices:
       - "/dev/ttyACM0:/dev/ttyACM0"
     command: ["idf.py", "-p", "/dev/ttyACM0", "flash", "monitor"]
+
+  # Android companion app (see app/). Builds the APK entirely in a container.
+  #   docker compose run --rm app-build            # debug APK
+  #   docker compose run --rm app-build release    # release APK
+  # Output: app/build/app/outputs/flutter-apk/app-<mode>.apk
+  app-build:
+    build: ./app
+    image: esp-otp-app-builder
+    volumes:
+      - ./app:/project/app
+      # Persist the Gradle + pub caches so Maven deps and the Gradle
+      # distribution download once, not on every `--rm` run.
+      - esp-otp-gradle:/root/.gradle
+      - esp-otp-pubcache:/tmp/.pub-cache
+    working_dir: /project/app
+
+volumes:
+  esp-otp-gradle:
+  esp-otp-pubcache:

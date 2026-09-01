@@ -1,0 +1,27 @@
+name: esp_otp
+description: esp-otp companion app — manage TOTP tokens and sync the clock over BLE.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # BLE across native targets; here we ship Android.
+  flutter_blue_plus: ^1.32.12
+  # Persistent foreground service hosting the background clock-sync engine.
+  flutter_foreground_task: 8.10.0
+  # Android 12+ runtime BLE (scan/connect) + notification permissions.
+  permission_handler: ^11.3.1
+  # Remember the last connected device.
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
