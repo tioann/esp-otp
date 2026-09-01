@@ -7,7 +7,7 @@
 # Usage (see scripts/build.sh and docker-compose.yml):
 #   docker build -t esp-otp-builder .
 #   docker run --rm -v "$PWD":/project esp-otp-builder idf.py build
-FROM espressif/idf:release-v5.4
+FROM espressif/idf:release-v5.5
 
 # Build for the C3 by default; overridable on the command line.
 ENV IDF_TARGET=esp32c3
